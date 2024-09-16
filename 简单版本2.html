@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语听力练习</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .audio-btn {
+            margin-top: 20px;
+        }
+        .word-select {
+            margin: 5px;
+        }
+        .sentence {
+            display: block;
+            text-align: left;
+            margin-top: 20px;
+        }
+        .sentence h2 {
+            text-align: center;
+        }
+        .sentence-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        select {
+            margin: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>英语听力练习</h1>
+        <p>点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。</p>
+        
+        <!-- 音频播放 -->
+        <div class="audio-btn">
+            <audio id="audio" src="" controls></audio>
+        </div>
+
+        <!-- 句子区 -->
+        <div class="sentence">
+            <h2>句子区</h2>
+            <div id="sentence" class="sentence-wrapper">
+                <!-- 动态加载句子的单词 -->
+            </div>
+        </div>
+
+        <button onclick="checkSentence()">检查句子</button>
+
+        <h3>你选择的句子是：<span id="currentSentence"></span></h3>
+    </div>
+
+    <script>
+        // 存储句子的数组，每个句子有对应的单词及其选项
+        const sentences = [
+            {
+                audio: './video/output_1.MP3',
+                correct: 'This is a test',
+                words: [
+                    ['This'],
+                    ['is', 'are', 'was', 'were'],
+                    ['a', 'the', 'an', 'some'],
+                    ['test', 'exam', 'quiz', 'assignment']
+                ]
+            },
+            {
+                audio: './video/output_2.MP3',
+                correct: 'He is running fast',
+                words: [
+                    ['He', 'She', 'They', 'It'],
+                    ['is', 'are', 'was', 'were'],
+                    ['running', 'walking', 'jumping', 'sitting'],
+                    ['fast', 'slow', 'quick', 'steady']
+                ]
+            },
+            // 可以继续添加更多句子
+        ];
+
+        let currentIndex = 0; // 当前句子的索引
+
+        // 加载句子的函数
+        function loadSentence(index) {
+            const sentenceData = sentences[index];
+            const sentenceDiv = document.getElementById('sentence');
+            const audio = document.getElementById('audio');
+
+            // 清空之前的句子
+            sentenceDiv.innerHTML = '';
+
+            // 设置音频文件
+            audio.src = sentenceData.audio;
+
+            // 动态创建下拉框
+            sentenceData.words.forEach(wordOptions => {
+                const select = document.createElement('select');
+                select.classList.add('word-select');
+                select.onchange = updateSentence;
+
+                wordOptions.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    select.appendChild(optionElement);
+                });
+
+                sentenceDiv.appendChild(select);
+            });
+
+            // 更新当前选择的句子
+            updateSentence();
+        }
+
+        // 播放音频
+        function playAudio() {
+            const audio = document.getElementById('audio');
+            audio.play();
+        }
+
+        // 实时更新句子
+        function updateSentence() {
+            const selects = document.querySelectorAll('.word-select');
+            const currentSentence = Array.from(selects).map(select => select.value).join(" ");
+            document.getElementById('currentSentence').innerText = currentSentence;
+        }
+
+        // 检查句子是否正确
+        function checkSentence() {
+            const currentSentence = document.getElementById('currentSentence').innerText;
+            const correctSentence = sentences[currentIndex].correct;
+
+            if (currentSentence === correctSentence) {
+                alert("正确！进入下一题。");
+                currentIndex++;
+
+                if (currentIndex < sentences.length) {
+                    loadSentence(currentIndex); // 加载下一个句子
+                } else {
+                    alert("恭喜你，所有题目已完成！");
+                }
+            } else {
+                alert("错误，再试一次！");
+            }
+        }
+
+        // 页面加载时初始化第一个句子
+        window.onload = () => {
+            loadSentence(currentIndex);
+        };
+    </script>
+
+</body>
+</html>

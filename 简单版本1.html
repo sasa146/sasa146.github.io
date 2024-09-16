@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语听力练习</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .audio-btn {
+            margin-top: 20px;
+        }
+        .word-select {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>英语听力练习</h1>
+        <p>点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。</p>
+        
+        <!-- 音频播放 -->
+        <div class="audio-btn">
+            <audio id="audio" src="./video/output_1.MP3"></audio>
+            <button onclick="playAudio()">播放音频</button>
+        </div>
+
+        <!-- 句子区 -->
+        <div class="sentence">
+            <h2>句子区</h2>
+            <div id="sentence">
+                <select class="word-select" onchange="updateSentence()">
+                    <option value="This">This</option>
+                    <option value="These">These</option>
+                    <option value="That">That</option>
+                    <option value="Those">Those</option>
+                </select>
+                <select class="word-select" onchange="updateSentence()">
+                    <option value="is">is</option>
+                    <option value="are">are</option>
+                    <option value="was">was</option>
+                    <option value="were">were</option>
+                </select>
+                <select class="word-select" onchange="updateSentence()">
+                    <option value="a">a</option>
+                    <option value="the">the</option>
+                    <option value="an">an</option>
+                    <option value="some">some</option>
+                </select>
+                <select class="word-select" onchange="updateSentence()">
+                    <option value="test">test</option>
+                    <option value="exam">exam</option>
+                    <option value="quiz">quiz</option>
+                    <option value="assignment">assignment</option>
+                </select>
+            </div>
+        </div>
+
+        <button onclick="checkSentence()">检查句子</button>
+
+        <h3>你选择的句子是：<span id="currentSentence"></span></h3>
+    </div>
+
+    <script>
+        // 播放音频
+        function playAudio() {
+            var audio = document.getElementById('audio');
+            audio.play();
+        }
+
+        // 实时更新句子
+        function updateSentence() {
+            var selects = document.querySelectorAll('.word-select');
+            var currentSentence = Array.from(selects).map(select => select.value).join(" ");
+            document.getElementById('currentSentence').innerText = currentSentence;
+        }
+
+        // 检查句子是否正确
+        function checkSentence() {
+            var currentSentence = document.getElementById('currentSentence').innerText;
+            var correctSentence = "This is a test";
+
+            if (currentSentence === correctSentence) {
+                alert("正确！");
+            } else {
+                alert("错误，再试一次！");
+            }
+        }
+
+        // 初始化时更新当前句子显示
+        window.onload = updateSentence;
+    </script>
+
+</body>
+</html>

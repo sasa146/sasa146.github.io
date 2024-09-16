@@ -1,205 +1,375 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  
-  
-  <title>Hexo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Hexo">
-<meta property="og:url" content="https://sasa146.github.io/sa146.github.io.git/index.html">
-<meta property="og:site_name" content="Hexo">
-<meta property="og:locale">
-<meta property="article:author" content="shang qian">
-<meta name="twitter:card" content="summary">
-  
-    <link rel="alternate" href="/sa146.github.io.git/atom.xml" title="Hexo" type="application/atom+xml">
-  
-  
-    <link rel="shortcut icon" href="/sa146.github.io.git/favicon.png">
-  
-  
-  
-<link rel="stylesheet" href="/sa146.github.io.git/css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语听力练习</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .audio-btn {
+            margin-top: 20px;
+        }
+        .word-select {
+            margin: 5px;
+        }
+        .sentence {
+            display: block;
+            text-align: left;
+            margin-top: 20px;
+        }
+        .sentence h2 {
+            text-align: center;
+        }
+        .sentence-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        select {
+            margin: 5px;
+            font-size: 16px;
+        }
+        #progress-bar {
+            width: 100%;
+            background-color: #f3f3f3;
+        }
+        #progress-bar-fill {
+            width: 0;
+            height: 20px;
+            background-color: #4caf50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+        }
+        .sentence-selection, .playback-speed {
+            margin: 20px 0;
+        }
 
-  
-    
-<link rel="stylesheet" href="/sa146.github.io.git/fancybox/jquery.fancybox.min.css">
+        /* 消息提示框的样式 */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            color: white;
+            background-color: #4caf50; /* 默认绿色背景 */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
 
-  
-  
-<meta name="generator" content="Hexo 7.3.0"></head>
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
 
+        /* 错误提示样式 */
+        .message-box.error {
+            background-color: #f44336; /* 红色背景 */
+        }
+    </style>
+</head>
 <body>
-  <div id="container">
-    <div id="wrap">
-      <header id="header">
-  <div id="banner"></div>
-  <div id="header-outer" class="outer">
-    <div id="header-title" class="inner">
-      <h1 id="logo-wrap">
-        <a href="/sa146.github.io.git/" id="logo">Hexo</a>
-      </h1>
-      
+
+    <div class="container">
+        <!-- 正确提示音的隐藏音频 -->
+        <audio id="correctSound" src="./right.wav" style="display: none;"></audio>
+
+        <!-- 错误提示音的隐藏音频 -->
+        <audio id="errorSound" src="/error.wav" style="display: none;"></audio>
+
+        <h1 id="myButton">英语听力练习</h1>
+        <p id="answer">点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。</p>
+
+        <!-- 选择文章 -->
+        <span class="article-selection">
+            <label for="articleSelect">选择文章：</label>
+            <select id="articleSelect" onchange="changeArticle()">
+                <!-- 动态加载文章选项 -->
+            </select>
+        </span>
+
+        <!-- 选择句子 -->
+        <span class="sentence-selection">
+            <label for="sentenceSelect">选择句子：</label>
+            <select id="sentenceSelect" onchange="changeSentence()">
+                <!-- 动态加载句子选项 -->
+            </select>
+        </span>
+        
+
+        <!-- 消息提示容器 -->
+        <div id="message-box" class="message-box"></div>
+
+        <!-- 播放速度控制 -->
+        <div class="playback-speed">
+            <label>播放速度：</label>
+            <button onclick="setPlaybackSpeed(0.5)">0.5x</button>
+            <button onclick="setPlaybackSpeed(1)">1x</button>
+            <button onclick="setPlaybackSpeed(1.5)">1.5x</button>
+            <button onclick="setPlaybackSpeed(2)">2x</button>
+        </div>
+
+        <!-- 音频播放 -->
+        <div class="audio-btn">
+            <audio id="audio" controls></audio>
+            <div id="progress-bar">
+                <div id="progress-bar-fill">0%</div>
+            </div>
+            <p id="loading-status"></p>
+            
+        </div>
+
+        <!-- 句子区 -->
+        <div class="sentence">
+            <h2>句子区</h2>
+            <div id="sentence" class="sentence-wrapper">
+                <!-- 动态加载句子的单词 -->
+            </div>
+        </div>
+
+        <button onclick="checkSentence()">检查句子</button>
+
+        <h3>你选择的句子是：<span id="currentSentence"></span></h3>
     </div>
-    <div id="header-inner" class="inner">
-      <nav id="main-nav">
-        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
-        
-          <a class="main-nav-link" href="/sa146.github.io.git/">Home</a>
-        
-          <a class="main-nav-link" href="/sa146.github.io.git/archives">Archives</a>
-        
-      </nav>
-      <nav id="sub-nav">
-        
-        
-          <a class="nav-icon" href="/sa146.github.io.git/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
-        
-        <a class="nav-icon nav-search-btn" title="Suche"><span class="fa fa-search"></span></a>
-      </nav>
-      <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Suche"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://sasa146.github.io/sa146.github.io.git"></form>
-      </div>
-    </div>
-  </div>
-</header>
 
-      <div class="outer">
-        <section id="main">
-  
-    <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/sa146.github.io.git/2024/09/16/hello-world/" class="article-date">
-  <time class="dt-published" datetime="2024-09-16T11:18:52.043Z" itemprop="datePublished">2024-09-16</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/sa146.github.io.git/2024/09/16/hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a target="_blank" rel="noopener" href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sasa146.github.io/sa146.github.io.git/2024/09/16/hello-world/" data-id="cm14za8xn0000tkepck65ffr9" data-title="Hello World" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
+    <script>
 
 
+        const answert = document.getElementById('answer');
+        const button = document.getElementById('myButton');
 
-  
+        // 当按住按钮时显示“你好”
+        button.addEventListener('mousedown', function() {
+            answert.innerText = externalData.articles[currentArticleIndex].sentences[currentIndex].correct;
+        });
 
+        // 当松开按钮时显示“离开”
+        button.addEventListener('mouseup', function() {
+            answert.innerText = "点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。";
+        });
 
-</section>
-        
-          <aside id="sidebar">
-  
-    
-
-  
-    
-
-  
-    
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">Archiv</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/sa146.github.io.git/archives/2024/09/">September 2024</a></li></ul>
-    </div>
-  </div>
+        // 如果鼠标移出按钮区域也显示“离开”
+        button.addEventListener('mouseleave', function() {
+            answert.innerText = "点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。";
+        });
 
 
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">letzter Beitrag</h3>
-    <div class="widget">
-      <ul>
-        
-          <li>
-            <a href="/sa146.github.io.git/2024/09/16/hello-world/">Hello World</a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
+        // 播放提示音
+        function playSound(type) {
+            const correctSound = document.getElementById('correctSound');
+            const errorSound = document.getElementById('errorSound');
 
-  
-</aside>
-        
-      </div>
-      <footer id="footer">
-  
-  <div class="outer">
-    <div id="footer-info" class="inner">
-      
-      &copy; 2024 shang qian<br>
-      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
-    </div>
-  </div>
-</footer>
+            if (type === 'correct') {
+                correctSound.currentTime = 0; // 从头开始播放
+                correctSound.play();
+            } else if (type === 'error') {
+                errorSound.currentTime = 0; // 从头开始播放
+                errorSound.play();
+            }
+        }
 
-    </div>
-    <nav id="mobile-nav">
-  
-    <a href="/sa146.github.io.git/" class="mobile-nav-link">Home</a>
-  
-    <a href="/sa146.github.io.git/archives" class="mobile-nav-link">Archives</a>
-  
-</nav>
-    
+        let externalData = {}; // 用于存储从外部文件读取的数据
+        let currentIndex = 0; // 当前句子的索引
+        let currentArticleIndex = 0; // 当前文章的索引
+
+        // 页面加载时从外部 JSON 文件中加载数据
+        window.onload = () => {
+            fetch('externalData.json')
+                .then(response => response.json())
+                .then(data => {
+                    externalData = data;
+                    loadArticleSelect(); // 加载文章选择下拉菜单
+                    loadSentenceSelect(); // 加载句子选择下拉菜单
+                    loadSentence(currentIndex); // 默认加载第一个句子
+                })
+                .catch(error => {
+                    console.error('加载外部数据时出错:', error);
+                });
+        };
+
+        // 动态加载文章选择下拉菜单
+        function loadArticleSelect() {
+            const articleSelect = document.getElementById('articleSelect');
+            articleSelect.innerHTML = ''; // 清空之前的选项
+
+            externalData.articles.forEach((article, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = article.name; // 使用文章的 name 属性
+                articleSelect.appendChild(option);
+            });
+
+            // 确保下拉菜单显示当前文章
+            articleSelect.value = currentArticleIndex;
+        }
+
+        // 当选择了文章时，更新句子选择器
+        function changeArticle() {
+            const selectedArticleIndex = document.getElementById('articleSelect').value;
+            currentArticleIndex = parseInt(selectedArticleIndex);
+            currentIndex = 0; // 重置当前句子的索引
+            loadSentenceSelect(); // 更新句子选择器
+            loadSentence(currentIndex); // 加载文章中的第一个句子
+        }
 
 
-<script src="/sa146.github.io.git/js/jquery-3.6.4.min.js"></script>
+       // 动态加载句子选择下拉菜单
+        function loadSentenceSelect() {
+            const sentenceSelect = document.getElementById('sentenceSelect');
+            sentenceSelect.innerHTML = ''; // 清空之前的选项
+
+            const currentArticle = externalData.articles[currentArticleIndex];
+            currentArticle.sentences.forEach((sentence, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = sentence.name; // 使用句子的 name 属性
+                sentenceSelect.appendChild(option);
+            });
+
+            // 确保下拉菜单显示当前句子
+            sentenceSelect.value = currentIndex;
+        }
+
+        // 加载句子的函数
+        function loadSentence(index) {
+            const sentenceData = externalData.articles[currentArticleIndex].sentences[index];
+            const sentenceDiv = document.getElementById('sentence');
+            const audio = document.getElementById('audio');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+            const loadingStatus = document.getElementById('loading-status');
+
+            // 清空之前的句子
+            sentenceDiv.innerHTML = '';
+            progressBarFill.style.width = '0%'; // 重置进度条
+            loadingStatus.innerText = '正在加载音频...';
+
+            // 设置音频文件
+            audio.src = sentenceData.audio;
+            audioLoaded = false; // 重置音频加载标记
+
+            // 监听音频加载进度
+            audio.addEventListener('progress', function() {
+                if (audio.buffered.length > 0) {
+                    const bufferedAmount = audio.buffered.end(0);
+                    const duration = audio.duration;
+                    const percent = Math.min(bufferedAmount / duration * 100, 100);
+                    progressBarFill.style.width = percent + '%';
+                    progressBarFill.innerText = Math.round(percent) + '%';
+
+                    if (percent === 100) {
+                        audioLoaded = true;
+                        loadingStatus.innerText = '音频加载完成';
+                    }
+                }
+            });
+
+            // 监听音频加载错误
+            audio.addEventListener('error', function() {
+                loadingStatus.innerText = '音频加载失败，请检查文件路径或网络连接。';
+                progressBarFill.style.width = '0%';
+            });
+
+            // 动态创建下拉框
+            sentenceData.words.forEach(wordOptions => {
+                const select = document.createElement('select');
+                select.classList.add('word-select');
+                select.onchange = updateSentence;
+
+                wordOptions.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    select.appendChild(optionElement);
+                });
+
+                sentenceDiv.appendChild(select);
+            });
+
+            // 更新当前选择的句子
+            updateSentence();
+        }
+        // 当用户选择了一个句子时，更新当前句子
+        function changeSentence() {
+            const selectedSentenceIndex = document.getElementById('sentenceSelect').value;
+            currentIndex = parseInt(selectedSentenceIndex);
+            loadSentence(currentIndex);
+        }
+
+        // 实时更新句子
+        function updateSentence() {
+            const selects = document.querySelectorAll('.word-select');
+            const currentSentence = Array.from(selects).map(select => select.value).join(" ");
+            document.getElementById('currentSentence').innerText = currentSentence;
+        }
+
+        // 设置音频播放速度
+        function setPlaybackSpeed(speed) {
+            const audio = document.getElementById('audio');
+            audio.playbackRate = speed;
+        }
+
+        // 显示浮动的提示信息，默认绿色，类型可以是'success'或者'error'
+        function showMessage(message, type = 'success') {
+            const messageBox = document.getElementById('message-box');
+            messageBox.textContent = message;
+
+            // 根据消息类型设置样式
+            if (type === 'success') {
+                messageBox.classList.remove('error');
+                messageBox.style.backgroundColor = '#4caf50'; // 绿色
+            } else if (type === 'error') {
+                messageBox.classList.add('error');
+                messageBox.style.backgroundColor = '#f44336'; // 红色
+            }
+
+            // 显示消息并在3秒后自动隐藏
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        // 修改检查句子的逻辑，确保下拉菜单更新到正确的句子
+        function checkSentence() {
+            if (!audioLoaded) {
+                showMessage("请等待音频加载完成后再进行检查。", 'error');
+                return;
+            }
+
+            const currentSentence = document.getElementById('currentSentence').innerText;
+            const correctSentence = externalData.articles[currentArticleIndex].sentences[currentIndex].correct;
 
 
+            if (currentSentence === correctSentence) {
+                showMessage("正确！进入下一题。", 'success');
+                playSound('correct'); // 播放正确提示音
+                currentIndex++;
 
-  
-<script src="/sa146.github.io.git/fancybox/jquery.fancybox.min.js"></script>
+                if (currentIndex < externalData.articles[currentArticleIndex].sentences.length) {
+                    loadSentence(currentIndex); // 加载下一个句子
+                    document.getElementById('sentenceSelect').value = currentIndex; // 更新下拉菜单的选中项
+                } else {
+                    showMessage("恭喜你，所有题目已完成！", 'success');
+                }
+            } else {
+                playSound('error'); // 播放错误提示音
+                showMessage("错误，再试一次！", 'error');
+                
+            }
+        }
+    </script>
 
-
-
-
-<script src="/sa146.github.io.git/js/script.js"></script>
-
-
-
-
-
-  </div>
 </body>
 </html>
