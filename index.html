@@ -18,7 +18,8 @@
             margin-top: 20px;
         }
         .word-select {
-            margin: 5px;
+            margin-top: 5px;
+            margin-left: 8px;
         }
         .sentence {
             display: block;
@@ -34,6 +35,8 @@
             justify-content: center;
         }
         select {
+            /* -webkit-appearance: none; /* 移除 Safari 默认样式 */
+            /* appearance: none; */ 
             margin: 5px;
             font-size: 16px;
         }
@@ -78,9 +81,80 @@
         .message-box.error {
             background-color: #f44336; /* 红色背景 */
         }
+
+        /* 模糊层的样式 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7); /* 半透明黑色背景 */
+            backdrop-filter: blur(10px); /* 模糊效果 */
+            display: none; /* 初始不显示 */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* 新内容的样式，分为两列 */
+        .new-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 两列布局 */
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .new-content div {
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .new-content div:first-child {
+            margin-right: 10px;
+        }
+
+        /* 关闭按钮样式 */
+        .close-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: gray;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 24px;
+            line-height: 40px; /* 垂直居中 */
+            text-align: center;
+            cursor: pointer;
+        }
+
+        /* 按钮样式 */
+        .show-overlay-btn {
+            
+            margin: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+    <!-- 添加模糊层 -->
+    <div class="overlay" id="overlay" onclick="hideOverlay(event)">
+        <div class="new-content" onclick="event.stopPropagation()"> <!-- 阻止点击事件穿透到模糊层 -->
+            <button class="close-btn" onclick="hideOverlay(event)">&#10006;</button> <!-- 使用叉号符号 -->
+            
+            <div id="answerEnlish">This is English content.</div>
+            <div id="answerChinese">这是中文内容。</div>
+        </div>
+    </div>
 
     <div class="container">
         <!-- 正确提示音的隐藏音频 -->
@@ -113,17 +187,22 @@
         <div id="message-box" class="message-box"></div>
 
         <!-- 播放速度控制 -->
-        <div class="playback-speed">
-            <label>播放速度：</label>
-            <button onclick="setPlaybackSpeed(0.5)">0.5x</button>
-            <button onclick="setPlaybackSpeed(1)">1x</button>
-            <button onclick="setPlaybackSpeed(1.5)">1.5x</button>
-            <button onclick="setPlaybackSpeed(2)">2x</button>
-        </div>
-
+        <span class="playback-speed">
+            <label for="speedSelect">播放速度：</label>
+            <select id="speedSelect" onchange="setPlaybackSpeed(this.value)">
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1x</option> <!-- 默认值 -->
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+            </select>
+        </span>
+        <button class="show-overlay-btn" onclick="showOverlay()">显示解析</button>
+        
         <!-- 音频播放 -->
         <div class="audio-btn">
-            <audio id="audio" controls></audio>
+            <audio id="audio" controls>
+                您的浏览器暂时不支持map3文件的播放，您如果需要可以联系开发者添加wav，格式文件。
+            </audio>
             <div id="progress-bar">
                 <div id="progress-bar-fill">0%</div>
             </div>
@@ -145,6 +224,67 @@
     </div>
 
     <script>
+        // 手动加载句子
+        function loadingControl() {
+            const audio = document.getElementById('audio');
+
+            audio.load();  // 手动触发音频加载
+
+        }
+        function laodDetail(){
+            const audio = document.getElementById('audio');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+            const loadingStatus = document.getElementById('loading-status');
+            audioLoaded = false; // 重置音频加载标记
+            var timeState=0
+            
+            timer1 =setInterval(() => {
+                
+                const bufferedAmount = audio.buffered.end(0);
+                const duration = audio.duration;
+                const percent = Math.min(bufferedAmount / duration * 100, 100);
+                progressBarFill.style.width = percent + '%';
+                progressBarFill.innerText = Math.round(percent) + '%';
+                console.log("我读你妹",percent)
+                timeState++;
+                if(timeState>10){
+                    loadingStatus.innerText = '文件超过限制，现在可以点击播放按钮，完成加载。';
+                }; 
+                if (percent >= 90) {
+                    
+                    loadingStatus.innerText = '音频加载完成';
+                    progressBarFill.style.width = 100 + '%';
+                    progressBarFill.innerText = Math.round(100) + '%';
+                    audioLoaded = true;
+                    clearInterval(timer1)
+                }
+            }, 150);
+           
+        }
+
+        // 手动同步进度条
+
+
+        // 显示模糊层和新内容
+        function showOverlay() {
+            document.getElementById('overlay').style.display = 'flex';
+            // 不用每条都进行更新
+            document.getElementById('answerChinese').innerText=externalData.articles[currentArticleIndex].sentences[currentIndex].translate;
+            document.getElementById('answerEnlish').innerText=externalData.articles[currentArticleIndex].sentences[currentIndex].correct;
+        }
+
+        // 隐藏模糊层
+        function hideOverlay(event) {
+            event.stopPropagation(); // 防止事件冒泡
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // 关闭模糊层，当用户点击背景时触发
+        document.getElementById('overlay').addEventListener('click', function(event) {
+            if (event.target === this) { // 检查是否点击在模糊背景上
+                hideOverlay(event);
+            }
+        });
 
 
         const answert = document.getElementById('answer');
@@ -162,6 +302,15 @@
 
         // 如果鼠标移出按钮区域也显示“离开”
         button.addEventListener('mouseleave', function() {
+            answert.innerText = "点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。";
+        });
+
+        button.addEventListener('touchstart', function(event) {
+            event.preventDefault();  // 防止触摸引发鼠标事件冲突
+            answert.innerText = externalData.articles[currentArticleIndex].sentences[currentIndex].correct;
+        });
+        button.addEventListener('touchend', function(event) {
+            event.preventDefault();  // 防止触摸引发鼠标事件冲突
             answert.innerText = "点击播放按钮，听一段英语语音，然后从下拉选项中选择正确的单词，拼成正确的句子。";
         });
 
@@ -242,6 +391,25 @@
             sentenceSelect.value = currentIndex;
         }
 
+        // 创建一个通用的函数，用来创建带样式和文本的元素
+        function createStyledElement(tagName, text, styles) {
+            // 创建指定类型的元素
+            const element = document.createElement(tagName);
+            element.classList.add('word-select');
+
+            // 设置文本内容
+            element.innerText = text;
+
+            // 遍历 styles 对象，动态设置样式
+            for (const property in styles) {
+                if (styles.hasOwnProperty(property)) {
+                    element.style[property] = styles[property];
+                }
+            }
+
+            return element;
+        }
+
         // 加载句子的函数
         function loadSentence(index) {
             const sentenceData = externalData.articles[currentArticleIndex].sentences[index];
@@ -255,31 +423,25 @@
             progressBarFill.style.width = '0%'; // 重置进度条
             loadingStatus.innerText = '正在加载音频...';
 
+            // 设置音频文件并强制加载
+            // audio.src = sentenceData.audio;
+            // audio.preload = 'auto';  // 确保预加载
+            // audio.load();  // 手动触发音频加载
+            // audioLoaded = false;
+
             // 设置音频文件
             audio.src = sentenceData.audio;
             audioLoaded = false; // 重置音频加载标记
 
-            // 监听音频加载进度
-            audio.addEventListener('progress', function() {
-                if (audio.buffered.length > 0) {
-                    const bufferedAmount = audio.buffered.end(0);
-                    const duration = audio.duration;
-                    const percent = Math.min(bufferedAmount / duration * 100, 100);
-                    progressBarFill.style.width = percent + '%';
-                    progressBarFill.innerText = Math.round(percent) + '%';
-
-                    if (percent === 100) {
-                        audioLoaded = true;
-                        loadingStatus.innerText = '音频加载完成';
-                    }
-                }
-            });
-
+            loadingControl()
+            laodDetail()
             // 监听音频加载错误
             audio.addEventListener('error', function() {
                 loadingStatus.innerText = '音频加载失败，请检查文件路径或网络连接。';
                 progressBarFill.style.width = '0%';
             });
+            let tep_num=0;
+            let c_word=""
 
             // 动态创建下拉框
             sentenceData.words.forEach(wordOptions => {
@@ -287,14 +449,33 @@
                 select.classList.add('word-select');
                 select.onchange = updateSentence;
 
+                tep_num=0;
+
                 wordOptions.forEach(option => {
                     const optionElement = document.createElement('option');
                     optionElement.value = option;
                     optionElement.textContent = option;
                     select.appendChild(optionElement);
-                });
+                    tep_num++;
+                    c_word=option;
 
-                sentenceDiv.appendChild(select);
+                });
+                
+                if (tep_num>1){
+                    sentenceDiv.appendChild(select);
+                }
+                else{
+                    const myElement = createStyledElement('div', c_word, {
+
+                        fontSize: '16px',              // 字体大小
+                        padding: '6px',               // 内边距
+                        borderRadius: '5px',            // 边框圆角
+                        marginLeft: '3px'
+                    });
+                    sentenceDiv.appendChild(myElement);
+                }
+
+                
             });
 
             // 更新当前选择的句子
@@ -305,12 +486,24 @@
             const selectedSentenceIndex = document.getElementById('sentenceSelect').value;
             currentIndex = parseInt(selectedSentenceIndex);
             loadSentence(currentIndex);
+            
         }
 
         // 实时更新句子
         function updateSentence() {
             const selects = document.querySelectorAll('.word-select');
-            const currentSentence = Array.from(selects).map(select => select.value).join(" ");
+             // 遍历所有元素，根据类型获取值或文本内容
+
+            const currentSentence = Array.from(selects).map(element => {
+                if (element.tagName.toLowerCase() === 'select') {
+                    // 如果是 select 元素，获取其选中的 value 值
+                    return element.value;
+                } else if (element.tagName.toLowerCase() === 'div') {
+                    // 如果是 div 元素，获取其 innerText 或 textContent
+                    return element.innerText;  // 或者使用 element.textContent
+                }
+            }).join(" ");
+
             document.getElementById('currentSentence').innerText = currentSentence;
         }
 
