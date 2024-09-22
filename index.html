@@ -197,6 +197,7 @@
             </select>
         </span>
         <button class="show-overlay-btn" onclick="showOverlay()">显示解析</button>
+        <button id="nextButton">单下双上</button>
         
         <!-- 音频播放 -->
         <div class="audio-btn">
@@ -481,6 +482,68 @@
             // 更新当前选择的句子
             updateSentence();
         }
+        
+        
+        const nextButton = document.getElementById('nextButton');
+        const select = document.getElementById('sentenceSelect');
+        let clickTimer = null;
+        const delay = 250;  // 设置双击的最大延迟，通常200-300ms
+        // 单击事件：进入下一个句子
+        function handleSingleClick() {
+            let currentIndex = select.selectedIndex;
+
+            // 如果没有选中最后一个选项，移动到下一个选项
+            if (currentIndex < select.options.length - 1) {
+                select.selectedIndex = currentIndex + 1;
+            } else {
+                // 如果已经是最后一个选项，循环回到第一个选项
+                select.selectedIndex = 0;
+            }
+
+            // 更新句子
+            select.onchange();
+        }
+
+        // 双击事件：返回上一个句子
+        function handleDoubleClick() {
+            let currentIndex = select.selectedIndex;
+
+            // 如果不是第一个选项，移动到上一个选项
+            if (currentIndex > 0) {
+                select.selectedIndex = currentIndex - 1;
+            } else {
+                // 如果已经是第一个选项，循环到最后一个选项
+                select.selectedIndex = select.options.length - 1;
+            }
+
+            // 更新句子
+            select.onchange();
+        }
+
+        // 处理按钮的点击事件
+        nextButton.onclick = function() {
+            // 如果已经在等待双击，则取消单击操作
+            if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+            } else {
+                // 启动计时器，延迟执行单击事件
+                clickTimer = setTimeout(function() {
+                    handleSingleClick();
+                    clickTimer = null;
+                }, delay);
+            }
+        };
+
+        // 处理双击事件
+        nextButton.ondblclick = function() {
+            // 清除单击的计时器，防止双击被当作两次单击
+            clearTimeout(clickTimer);
+            clickTimer = null;
+            
+            handleDoubleClick();
+        };
+        
         // 当用户选择了一个句子时，更新当前句子
         function changeSentence() {
             const selectedSentenceIndex = document.getElementById('sentenceSelect').value;
