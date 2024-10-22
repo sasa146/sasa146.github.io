@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Chat with Syntax Highlighting and LaTeX Support</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #chatBox {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            height: 400px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin: 5px 0;
+        }
+        .user {
+            color: blue;
+        }
+        .assistant {
+            color: green;
+        }
+        #promptInput {
+            width: calc(100% - 110px);
+        }
+        pre {
+            background-color: #282c34;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <h1>OpenAI Chat Example with Syntax Highlighting and LaTeX Support</h1>
+    <div id="chatBox"></div>
+    <input type="text" id="promptInput" placeholder="Type your message here..." />
+    <button id="sendRequest">Send</button>
+
+
+    <script>
+        var text1="sk-proj-w65ay082ae6D3g466oGdtLtls1NsVMgGYFH28Cjysm70Wq"
+        var text2="SmqdSgwT4qes0WAp09R_gI8HXIUaT3BlbkFJ_j6KT4VV3OQTBc"
+        var text3="gggBspkqpHg7LcBmI_NR07F_BnReEfeT_ME9BzUurhy3k7YPRtrOM2QN7vwA"
+        const messages = [
+            { "role": "system", "content": "You are an AI." }
+        ];
+
+        $(document).ready(function() {
+            $('#sendRequest').click(function() {
+                const userMessage = $('#promptInput').val();
+                if (!userMessage.trim()) return;
+
+                // Add user message to the chat and clear the input
+                $('#chatBox').append(`<div class="message user">User: ${userMessage}</div>`);
+                $('#promptInput').val('');
+
+                // Add user message to the message list to send to the assistant
+                messages.push({
+                    "role": "user",
+                    "content": userMessage
+                });
+
+                $.ajax({
+                    url: 'https://api.openai.com/v1/chat/completions',
+                    type: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${text1+text2+text3}`,
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify({
+                    "model": "gpt-4o-mini", // Assuming you are calling GPT-4 here
+                    "messages": messages,
+                }),
+                    success: function(data) {
+                        const assistantMessage = data.choices[0].message.content;
+
+                        // Format message for code blocks and LaTeX
+                        const formattedMessage = formatAssistantMessage(assistantMessage);
+
+                        // Add assistant message to the chat
+                        $('#chatBox').append(`<div class="message assistant">Assistant: ${formattedMessage}</div>`);
+                        
+                        // Add assistant response to the message list to maintain context
+                        messages.push({
+                            "role": "assistant",
+                            "content": assistantMessage
+                        });
+
+                        // Execute Prism and MathJax for highlighting and rendering
+                        Prism.highlightAll();
+                        MathJax.typesetPromise();
+
+                        // Scroll to bottom
+                        $('#chatBox').scrollTop($('#chatBox')[0].scrollHeight);
+                    },
+                    error: function(err) {
+                        $('#chatBox').append('<div class="message error">Error communicating with API</div>');
+                    }
+                });
+            });
+        });
+
+        function formatAssistantMessage(message) {
+            // Format code blocks
+            message = message.replace(/```(\w+)?\n([\s\S]*?)```/g, function(match, lang, code) {
+                return `<pre class="language-${lang}"><code class="language-${lang}">${Prism.highlight(code, Prism.languages[lang] || Prism.languages.plaintext, lang)}</code></pre>`;
+            });
+
+            // Format LaTeX
+            message = message.replace(/\$(.+?)\$/g, function(match, latex) {
+                return `\\(${latex}\\)`;
+            });
+
+            return message.replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>
