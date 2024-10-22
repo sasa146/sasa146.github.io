@@ -48,10 +48,13 @@
     </style>
 </head>
 <body>
-    <h1>OpenAI Chat Example with Syntax Highlighting and LaTeX Support</h1>
-    <div id="chatBox"></div>
-    <input type="text" id="promptInput" placeholder="Type your message here..." />
-    <button id="sendRequest">Send</button>
+    <h1 style="margin: 10vh 12vw;width: 70vw;">ChatGPT API 4o模型</h1>
+    <div id="chatBox"style="margin: 10vh 12vw;width: 70vw;"></div>
+    <div style="margin: 10vh 12vw;width: 70vw;">
+        <input type="text" id="promptInput" placeholder="Type your message here..." />
+        <button id="sendRequest">Send</button>
+    </div>
+    
 
 
     <script>
@@ -63,7 +66,9 @@
         ];
 
         $(document).ready(function() {
-            $('#sendRequest').click(function() {
+
+            // Send message on button click and Enter key press
+            function sendMessage() {
                 const userMessage = $('#promptInput').val();
                 if (!userMessage.trim()) return;
 
@@ -85,7 +90,7 @@
                         'Content-Type': 'application/json'
                     },
                     data: JSON.stringify({
-                    "model": "gpt-4o-mini", // Assuming you are calling GPT-4 here
+                    "model": "gpt-4o", // Assuming you are calling GPT-4 here
                     "messages": messages,
                 }),
                     success: function(data) {
@@ -114,7 +119,18 @@
                         $('#chatBox').append('<div class="message error">Error communicating with API</div>');
                     }
                 });
+            }
+
+
+            $('#sendRequest').click(sendMessage);
+            
+            $('#promptInput').keypress(function(e) {
+                console.log("你好")
+                if (e.which == 13) { // Enter key is pressed
+                    sendMessage();
+                }
             });
+        
         });
 
         function formatAssistantMessage(message) {
