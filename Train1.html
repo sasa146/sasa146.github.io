@@ -189,7 +189,7 @@
           <div id="contextDiv" class="context">
             <div>下一题: <span id="nextQuestion"></span></div>
             <div>最佳用时: <span id="bestTime"></span></div>
-            <div>当前答对题目: <span id="currentCorrect"></span> / 2</div>
+            <div>当前答对题目: <span id="currentCorrect"></span> / 30</div>
             <div class="buttonGroup" style="display: inline; margin-top: 10px">
               <button onclick="clearCache()">清理缓存</button>
               <button onclick="startQuiz()">重新开始</button>
@@ -313,7 +313,7 @@
           showGlobalMessage("错误，再试一次。", false);
         }
 
-        if (correctCount >= 2) {
+        if (correctCount >= 30) {
           const display = document.getElementById("display");
           display.innerText = "已通关";
         } else {
