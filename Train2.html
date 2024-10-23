@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>记忆力训练 - 复原棋盘</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f8ff;
+      }
+
+      .settings,
+      .controls {
+        margin-bottom: 20px;
+      }
+
+      .board-container {
+        display: flex;
+        justify-content: center;
+      }
+
+      .board {
+        display: grid;
+        border: 1px solid #ccc;
+        gap: 2px;
+        background-color: #fff;
+      }
+
+      .cell {
+        width: 50px;
+        height: 50px;
+        background-color: #e0e0e0;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .black {
+        background-color: black;
+      }
+
+      .white {
+        background-color: white;
+      }
+
+      .message {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        display: none;
+      }
+
+      .controls button {
+        margin-right: 10px;
+      }
+
+      .hint {
+        background-color: blue;
+        animation: flash 0.5s alternate 3;
+      }
+
+      @keyframes flash {
+        from {
+          background-color: blue;
+        }
+        to {
+          background-color: #e0e0e0;
+        }
+      }
+
+      .float-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        background-color: #2196f3;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="settings">
+      <label for="size">棋盘大小:</label>
+      <select id="size">
+        <option value="4">4x4</option>
+        <option value="6">6x6</option>
+        <option value="8">8x8</option>
+      </select>
+      <label for="pieces">棋子数:</label>
+      <select id="pieces">
+        <option value="8">8</option>
+        <option value="12">12</option>
+        <option value="16">16</option>
+      </select>
+      <label for="time">记忆时间(秒):</label>
+      <select id="time">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+      </select>
+      <button onclick="startGame()">开始游戏</button>
+    </div>
+
+    <div class="controls" style="display: none">
+      <button id="checkButton" onclick="checkSolution()">检查</button>
+      <button id="hintButton" onclick="showHints()">提示</button>
+      <button id="continue" onclick="continueGame()" style="display: none">
+        继续
+      </button>
+    </div>
+
+    <div id="correctCount" class="correct-count controls" style="display: none">
+      当前答对题目: 0
+    </div>
+
+    <div class="board-container">
+      <div id="board" class="board"></div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <a href="Train1.html" class="float-button">计算能力</a>
+
+    <script>
+      let size, pieces, time;
+      let solution = [];
+      let userBoard = [];
+      let currentLevel = 0;
+
+      function startGame() {
+        document.getElementById("continue").style.display = "none";
+        size = parseInt(document.getElementById("size").value, 10);
+        pieces = parseInt(document.getElementById("pieces").value, 10);
+        time = parseInt(document.getElementById("time").value, 10);
+
+        localStorage.setItem(
+          "settings",
+          JSON.stringify({ size, pieces, time })
+        );
+        // 显示控制区域
+        document.querySelectorAll(".controls").forEach((control) => {
+          control.style.display = "block";
+        });
+        document.getElementById("continue").style.display = "none";
+
+        // 禁用按钮在记忆阶段
+        document.getElementById("checkButton").disabled = true;
+        document.getElementById("hintButton").disabled = true;
+
+        generateBoard();
+        generateSolution();
+        showSolution();
+      }
+
+      function generateBoard() {
+        const board = document.getElementById("board");
+        board.innerHTML = "";
+        board.style.gridTemplateColumns = `repeat(${size}, 50px)`;
+        board.style.gridTemplateRows = `repeat(${size}, 50px)`;
+        userBoard = Array(size * size).fill(null);
+
+        for (let i = 0; i < size * size; i++) {
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.addEventListener("click", () => placePiece(i, "white"));
+          cell.addEventListener("dblclick", () => placePiece(i, "black"));
+          board.appendChild(cell);
+        }
+      }
+
+      function generateSolution() {
+        // 创建一个新的数组（大小为 size * size），用于存储解决方案，每个位置初始为 null，表示没有棋子
+        solution = Array(size * size).fill(null);
+
+        // 计数器，表示已经放置的棋子数量
+        let placed = 0;
+
+        // 循环直到放置的棋子数量达到定义的 pieces 个数
+        while (placed < pieces) {
+          // 随机生成一个索引，用于选择在棋盘的哪个位置放置棋子
+          const index = Math.floor(Math.random() * solution.length);
+
+          // 检查该位置是否为空（即尚未放置棋子）
+          if (!solution[index]) {
+            // 随机选择要放置的棋子颜色（"black" 或 "white"），并将其放置在解决方案数组的该索引位置上
+            solution[index] = Math.random() < 0.5 ? "black" : "white";
+
+            // 增加已放置的棋子计数器
+            placed++;
+          }
+        }
+      }
+      function clearBoard(){
+        // 重置所有棋盘单元格的样式，把类名重置为基础类 "cell"，以隐藏显示的颜色
+        document
+            .querySelectorAll(".cell")
+            .forEach((cell) => (cell.className = "cell"));
+      }
+
+      function showSolutioError() {
+        // 先清空后展示
+        clearBoard()
+      
+        solution.forEach((color, index) => {
+          if (color) {
+            document.querySelectorAll(".cell")[index].classList.add(color);
+          }
+        });
+      }
+
+      function showSolution() {
+        // 遍历解决方案数组（solution），其中每个元素代表棋子颜色及其在棋盘上的位置
+        solution.forEach((color, index) => {
+          // 检查当前索引位置是否有棋子（是否存在颜色）
+          if (color) {
+            // 如果当前位置有棋子，根据索引找到对应的棋盘单元格，并添加该颜色的类名，
+            // 以此来显示棋子颜色 (黑色或白色)
+            document.querySelectorAll(".cell")[index].classList.add(color);
+          }
+        });
+
+        // 设置一个定时器，过一段时间后将所有棋盘单元格的颜色复位，并开始选择阶段
+        setTimeout(() => {
+          clearBoard()
+          // 调用函数以进入用户输入阶段，让用户开始复原棋盘
+          startSelectionPhase();
+        }, time * 1000); // 使用选择的记忆时间 (time) 设定的秒数延迟执行
+      }
+
+      function startSelectionPhase() {
+        showMessage("请复原棋盘布局", false);
+        // 启用按钮在测试阶段
+        document.getElementById("checkButton").disabled = false;
+        document.getElementById("hintButton").disabled = false;
+      }
+
+      function placePiece(index, color) {
+        // 检查在给定的索引上，用户棋盘上的颜色是否与传入的颜色相同
+        if (userBoard[index] === color) {
+          // 如果用户棋盘当前的颜色与传入的颜色相同，则移除此位置上的棋子
+          userBoard[index] = null; // 将用户棋盘这个位置设为null，表示没有棋子
+          document.querySelectorAll(".cell")[index].className = "cell"; // 更新此网格单元的类名，将其重置回默认状态（无棋子颜色）
+        } else {
+          // 如果当前的颜色不同于传入的颜色，则在该位置放置新的棋子
+          userBoard[index] = color; // 在用户棋盘的这个位置存储传入的颜色
+          const cell = document.querySelectorAll(".cell")[index]; // 获取特定索引位置的网格单元
+          cell.className = "cell " + color; // 添加颜色类名，使网格单元显示传入的颜色
+        }
+      }
+
+      function checkSolution() {
+        const correct = solution.every(
+          (color, index) => color === userBoard[index]
+        );
+        if (correct) {
+          currentLevel++;
+          showMessage(`成功！当前关卡: ${currentLevel}`, true);
+          if (currentLevel < 9) {
+            setTimeout(startGame, 2000);
+          } else {
+            showMessage("恭喜你已通过所有关卡！", true);
+            resetGame();
+          }
+        } else {
+          showSolutioError() 
+          showMessage("失败！下面是该题答案", false);
+
+          document.getElementById("continue").style.display = "inline";
+        }
+      }
+
+      // 在错误后继续游戏的逻辑（开始下一题）
+      function continueGame() {
+        clearBoard();
+        showMessage("已放弃此题，进入下一题...", false);
+        setTimeout(startGame, 1000); // 放弃后2秒进入下一题
+      }
+
+      function showHints() {
+        solution.forEach((color, index) => {
+          if (color && !userBoard[index]) {
+            const cell = document.querySelectorAll(".cell")[index];
+            cell.classList.add("hint");
+            setTimeout(() => {
+              cell.classList.remove("hint");
+            }, 1500);
+          }
+        });
+      }
+      // 更新已答对题目数
+      function updateCorrectCount() {
+        document.getElementById(
+          "correctCount"
+        ).innerText = `当前答对题目: ${currentLevel}`;
+      }
+      // 显示用户消息，并更新答对题数
+      function showMessage(message, success) {
+        const messageBox = document.getElementById("message");
+        messageBox.innerText = message;
+        messageBox.style.display = "block";
+        messageBox.style.backgroundColor = success ? "green" : "red";
+
+        if (success) {
+          updateCorrectCount();
+        }
+
+        setTimeout(() => {
+          messageBox.style.display = "none";
+        }, 3000);
+      }
+
+      function resetGame() {
+        currentLevel = 0;
+      }
+    </script>
+  </body>
+</html>
