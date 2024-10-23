@@ -13,10 +13,23 @@
         height: 100vh;
         background-color: #f0f8ff;
         margin: 0;
+        overflow: hidden; /* 防止在整个页面视口上出现滚动条 */
+      }
+      .content-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        max-width: 100%; /* 确保包裹区域可以全宽 */
+        overflow-x: auto; /* 当内容溢出时，允许水平滚动 */
       }
       .container {
         display: flex;
         align-items: flex-start;
+        /* max-width: 100%; 不使用，因为我们依赖 content-wrapper */
+      }
+      .calculator,
+      .drawer-container {
+        flex-shrink: 0; /* 防止子元素缩小 */
       }
       .calculator {
         background: #fff;
@@ -98,6 +111,9 @@
         width: 200px;
         padding: 20px;
       }
+      .drawer.open ~ .container {
+        overflow-x: auto; /* 当 drawer 打开时允许横向滚动 */
+      }
 
       @keyframes slidein {
         from {
@@ -162,37 +178,41 @@
   <body>
     <div id="globalMessage" class="message"></div>
 
-    <div class="container">
-      <div class="calculator">
-        <div id="question" class="display"></div>
-        <div id="display" class="display"></div>
-        <!-- <div id="correctCount" class="display"></div> -->
-        <div class="keypad">
-          <button onclick="appendNumber(1)">1</button>
-          <button onclick="appendNumber(2)">2</button>
-          <button onclick="appendNumber(3)">3</button>
-          <button onclick="appendNumber(4)">4</button>
-          <button onclick="appendNumber(5)">5</button>
-          <button onclick="appendNumber(6)">6</button>
-          <button onclick="appendNumber(7)">7</button>
-          <button onclick="appendNumber(8)">8</button>
-          <button onclick="appendNumber(9)">9</button>
-          <button onclick="appendNumber(0)">0</button>
-          <button onclick="clearDisplay()">清除</button>
-          <button id="check" onclick="checkAnswer()">检查</button>
+    <div class="content-wrapper">
+      <div class="container">
+        <div class="calculator">
+          <div id="question" class="display"></div>
+          <div id="display" class="display"></div>
+          <div class="keypad">
+            <button onclick="appendNumber(1)">1</button>
+            <button onclick="appendNumber(2)">2</button>
+            <button onclick="appendNumber(3)">3</button>
+            <button onclick="appendNumber(4)">4</button>
+            <button onclick="appendNumber(5)">5</button>
+            <button onclick="appendNumber(6)">6</button>
+            <button onclick="appendNumber(7)">7</button>
+            <button onclick="appendNumber(8)">8</button>
+            <button onclick="appendNumber(9)">9</button>
+            <button onclick="appendNumber(0)">0</button>
+            <button onclick="clearDisplay()">清除</button>
+            <button id="check" onclick="checkAnswer()">检查</button>
+          </div>
         </div>
-      </div>
 
-      <div class="drawer-container">
-        <button id="toggleDrawer" class="toggle-button">➡️</button>
-        <div id="drawer" class="drawer">
-          <div id="contextDiv" class="context">
-            <div>下一题: <span id="nextQuestion"></span></div>
-            <div>最佳用时: <span id="bestTime"></span></div>
-            <div>当前答对题目: <span id="currentCorrect"></span> / 30</div>
-            <div class="buttonGroup" style="display: inline; margin-top: 10px">
-              <button onclick="clearCache()">清理缓存</button>
-              <button onclick="startQuiz()">重新开始</button>
+        <div class="drawer-container">
+          <button id="toggleDrawer" class="toggle-button">➡️</button>
+          <div id="drawer" class="drawer">
+            <div id="contextDiv" class="context">
+              <div>下一题: <span id="nextQuestion"></span></div>
+              <div>最佳用时: <span id="bestTime"></span></div>
+              <div>当前答对题目: <span id="currentCorrect"></span> / 30</div>
+              <div
+                class="buttonGroup"
+                style="display: inline; margin-top: 10px"
+              >
+                <button onclick="clearCache()">清理缓存</button>
+                <button onclick="startQuiz()">重新开始</button>
+              </div>
             </div>
           </div>
         </div>
@@ -346,6 +366,7 @@
         const contextClass = document.getElementById("contextDiv");
         // 获取Toggle Button元素
         const toggleButton = document.getElementById("toggleDrawer");
+        const container = document.querySelector(".container");
 
         // 检查Drawer是否当前是打开状态
         if (drawer.classList.contains("open")) {
@@ -354,11 +375,11 @@
           setTimeout(() => {
             contextClass.classList.add("shrink");
             drawer.classList.add("shrink1");
-
           }, 30);
           // 设定一个300毫秒的定时器，在动画结束后移除"open"和"shrink"类
           setTimeout(() => {
             drawer.classList.remove("open");
+            container.style.overflowX = "hidden"; // 关闭滚动
             setTimeout(() => {
               contextClass.classList.remove("shrink");
               drawer.classList.remove("shrink1");
@@ -371,8 +392,10 @@
           drawer.classList.add("open");
           // 在Toggle Button中添加"open"类，改变Button状态
           toggleButton.classList.add("open");
+          container.style.overflowX = "auto"; // 启用滚动
         }
       }
+
       function formatTime(milliseconds) {
         const totalSeconds = Math.floor(milliseconds / 1000);
         const minutes = Math.floor(totalSeconds / 60);
