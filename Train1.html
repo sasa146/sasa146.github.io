@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>口算训练</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f8ff;
+        margin: 0;
+      }
+      .container {
+        display: flex;
+        align-items: flex-start;
+      }
+      .calculator {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        position: relative;
+        margin-right: 10px;
+      }
+      .display {
+        width: 100%;
+        height: 50px;
+        background: #f7f7f7;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        text-align: right;
+        font-size: 24px;
+        padding: 10px;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+      }
+      .message {
+        position: fixed;
+        top: 10px;
+        background-color: #f0f0f0;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 10px auto;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .message.success {
+        background-color: #dff0d8;
+        color: #3c763d;
+      }
+      .message.error {
+        background-color: #f2dede;
+        color: #a94442;
+      }
+      .keypad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+      .keypad button {
+        padding: 20px;
+        font-size: 18px;
+        background: #e0e0e0;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+      .keypad button:hover {
+        background: #d5d5d5;
+      }
+      .keypad button#check {
+        grid-column: span 3;
+        background-color: #4caf50;
+        color: white;
+      }
+      .drawer-container {
+        display: flex;
+        align-items: center;
+      }
+      .drawer {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        width: 0;
+        overflow: hidden;
+        padding: 0;
+        transition: width 0.3s, padding 0.3s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .drawer.open {
+        width: 200px;
+        padding: 20px;
+      }
+
+      @keyframes slidein {
+        from {
+          opacity: 1;
+        }
+
+        to {
+          opacity: 0;
+        }
+      }
+
+      @keyframes hide1 {
+        from {
+          opacity: 1;
+        }
+
+        to {
+          opacity: 0.3;
+        }
+      }
+
+      .context.shrink {
+        animation-duration: 0.35s;
+        animation-name: slidein;
+        animation-fill-mode: forwards;
+      }
+
+      .drawer .open .shrink1 {
+        animation-duration: 0.25s;
+        animation-name: hide1;
+        animation-fill-mode: forwards;
+      }
+
+      .toggle-button {
+        cursor: pointer;
+        background-color: transparent;
+        border: none;
+        font-size: 24px;
+        margin-left: 10px;
+        transition: transform 0.3s;
+      }
+      .toggle-button.open {
+        transform: rotate(180deg);
+      }
+      .float-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        background-color: #2196f3;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        text-align: center;
+      }
+      #correctCount {
+        text-align: right;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="globalMessage" class="message"></div>
+
+    <div class="container">
+      <div class="calculator">
+        <div id="question" class="display"></div>
+        <div id="display" class="display"></div>
+        <!-- <div id="correctCount" class="display"></div> -->
+        <div class="keypad">
+          <button onclick="appendNumber(1)">1</button>
+          <button onclick="appendNumber(2)">2</button>
+          <button onclick="appendNumber(3)">3</button>
+          <button onclick="appendNumber(4)">4</button>
+          <button onclick="appendNumber(5)">5</button>
+          <button onclick="appendNumber(6)">6</button>
+          <button onclick="appendNumber(7)">7</button>
+          <button onclick="appendNumber(8)">8</button>
+          <button onclick="appendNumber(9)">9</button>
+          <button onclick="appendNumber(0)">0</button>
+          <button onclick="clearDisplay()">清除</button>
+          <button id="check" onclick="checkAnswer()">检查</button>
+        </div>
+      </div>
+
+      <div class="drawer-container">
+        <button id="toggleDrawer" class="toggle-button">➡️</button>
+        <div id="drawer" class="drawer">
+          <div id="contextDiv" class="context">
+            <div>下一题: <span id="nextQuestion"></span></div>
+            <div>最佳用时: <span id="bestTime"></span></div>
+            <div>当前答对题目: <span id="currentCorrect"></span> / 2</div>
+            <div class="buttonGroup" style="display: inline; margin-top: 10px">
+              <button onclick="clearCache()">清理缓存</button>
+              <button onclick="startQuiz()">重新开始</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a href="nextLevel.html" class="float-button">下一关</a>
+
+    <script>
+      let correctCount = 0;
+      let currentQuestion = {};
+      let nextQuestionPreview = {};
+      let startTime;
+
+      const storage = window.localStorage;
+
+      function generateQuestion() {
+        const type = Math.random();
+        let a, b, op, answer;
+        if (type < 0.6) {
+          if (Math.random() < 0.5) {
+            a = Math.floor(10 + Math.random() * 90);
+            b = Math.floor(10 + Math.random() * 90);
+            op = "*";
+            answer = a * b;
+          } else {
+            a = Math.floor(100 + Math.random() * 900);
+            b = Math.floor(10 + Math.random() * 90);
+            while (a % b !== 0) {
+              a = Math.floor(100 + Math.random() * 900);
+            }
+            op = "/";
+            answer = a / b;
+          }
+        } else {
+          a = Math.floor(1000 + Math.random() * 9000);
+          b = Math.floor(1000 + Math.random() * 9000);
+          if (Math.random() < 0.5) {
+            if (a < b) [a, b] = [b, a];
+            op = "-";
+            answer = a - b;
+          } else {
+            op = "+";
+            answer = a + b;
+          }
+        }
+        return { a, b, op, answer };
+      }
+
+      function setNextQuestionPreview() {
+        nextQuestionPreview = generateQuestion();
+        document.getElementById(
+          "nextQuestion"
+        ).innerText = `${nextQuestionPreview.a} ${nextQuestionPreview.op} ${nextQuestionPreview.b}`;
+      }
+
+      function setCurrentQuestion() {
+        currentQuestion = nextQuestionPreview;
+        document.getElementById(
+          "question"
+        ).innerText = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b} = ?`;
+        startTime = Date.now();
+      }
+
+      function appendNumber(num) {
+        const display = document.getElementById("display");
+        display.innerText += num;
+      }
+
+      function clearDisplay() {
+        document.getElementById("display").innerText = "";
+      }
+
+      function showGlobalMessage(text, isSuccess) {
+        const globalMessage = document.getElementById("globalMessage");
+        globalMessage.innerText = text;
+        globalMessage.className =
+          "message " + (isSuccess ? "success" : "error");
+        globalMessage.style.opacity = 1;
+        setTimeout(() => {
+          globalMessage.style.opacity = 0;
+        }, 2000);
+      }
+
+      function updateBestQuizTime(currentTime) {
+        const bestTimeString = storage.getItem("bestQuizTime");
+        const bestTime = bestTimeString
+          ? parseInt(bestTimeString, 10)
+          : Infinity;
+
+        if (currentTime < bestTime) {
+          storage.setItem("bestQuizTime", currentTime.toString());
+          document.getElementById("bestTime").innerText =
+            formatTime(currentTime);
+        } else if (bestTimeString) {
+          document.getElementById("bestTime").innerText = formatTime(bestTime);
+        }
+      }
+      function checkAnswer() {
+        const display = document.getElementById("display");
+        const userAnswer = parseFloat(display.innerText.trim()); // 使用 parseFloat 来处理浮点数除法结果
+        if (userAnswer === currentQuestion.answer) {
+          correctCount++;
+          showGlobalMessage("正确!", true);
+          updateCorrectCount();
+
+          if (correctCount >= 2) {
+            const totalTime = Date.now() - startQuizTime;
+            updateBestQuizTime(totalTime);
+            showGlobalMessage("通关成功!", true);
+            document.getElementById("nextQuestion").innerText = "无";
+            // 不再继续问题循环以便用户意识到已通关
+          } else {
+            setCurrentQuestion(); // 转到新的当前问题
+            setNextQuestionPreview(); // 更新“下一题”预测
+          }
+        } else {
+          showGlobalMessage("错误，再试一次。", false);
+        }
+
+        if (correctCount >= 2) {
+          const display = document.getElementById("display");
+          display.innerText = "已通关";
+        } else {
+          clearDisplay();
+        }
+      }
+
+      function updateCorrectCount() {
+        document.getElementById("currentCorrect").innerText = correctCount;
+      }
+
+      function updateBestTime(currentTime) {
+        const bestTimeString = storage.getItem("bestTime");
+        const bestTime = bestTimeString
+          ? parseInt(bestTimeString, 10)
+          : Infinity;
+        if (currentTime < bestTime) {
+          storage.setItem("bestTime", currentTime.toString());
+          document.getElementById("bestTime").innerText = `${currentTime} 毫秒`;
+        } else {
+          document.getElementById(
+            "bestTime"
+          ).innerText = `${bestTimeString} 毫秒`;
+        }
+      }
+
+      function toggleDrawer() {
+        // 获取Drawer元素
+        const drawer = document.getElementById("drawer");
+        const contextClass = document.getElementById("contextDiv");
+        // 获取Toggle Button元素
+        const toggleButton = document.getElementById("toggleDrawer");
+
+        // 检查Drawer是否当前是打开状态
+        if (drawer.classList.contains("open")) {
+          // 如果是打开的，添加"shrink"类来启动收缩动画
+
+          setTimeout(() => {
+            contextClass.classList.add("shrink");
+            drawer.classList.add("shrink1");
+
+          }, 30);
+          // 设定一个300毫秒的定时器，在动画结束后移除"open"和"shrink"类
+          setTimeout(() => {
+            drawer.classList.remove("open");
+            setTimeout(() => {
+              contextClass.classList.remove("shrink");
+              drawer.classList.remove("shrink1");
+            }, 300);
+          }, 300);
+          // 从Toggle Button中移除"open"类，改变Button状态
+          toggleButton.classList.remove("open");
+        } else {
+          // 如果Drawer当前是关闭的，添加"open"类来打开它
+          drawer.classList.add("open");
+          // 在Toggle Button中添加"open"类，改变Button状态
+          toggleButton.classList.add("open");
+        }
+      }
+      function formatTime(milliseconds) {
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        if (minutes > 0) {
+          return `${minutes}分${seconds}秒`;
+        } else {
+          return `${seconds}秒`;
+        }
+      }
+
+      function clearCache() {
+        localStorage.removeItem("bestTime"); // 清除最佳时间
+        localStorage.removeItem("bestQuizTime"); // 清除最佳测验时间
+        // 其余需要清理的项
+        document.getElementById("bestTime").innerText = "无";
+      }
+
+      function initQuestions() {
+        currentQuestion = generateQuestion();
+        setNextQuestionPreview();
+        document.getElementById(
+          "question"
+        ).innerText = `${currentQuestion.a} ${currentQuestion.op} ${currentQuestion.b} = ?`;
+      }
+
+      // 初始设置
+      let startQuizTime;
+      function startQuiz() {
+        startQuizTime = Date.now();
+        correctCount = 0;
+        initQuestions();
+        updateCorrectCount();
+        clearDisplay();
+        const bestTime = storage.getItem("bestQuizTime");
+        document.getElementById("bestTime").innerText = bestTime
+          ? `${bestTime} 毫秒`
+          : "无";
+        document.getElementById(
+          "nextQuestion"
+        ).innerText = `${nextQuestionPreview.a} ${nextQuestionPreview.op} ${nextQuestionPreview.b}`;
+        document.getElementById("currentCorrect").innerText = 0;
+        showGlobalMessage("新的练习开始!", true);
+      }
+
+      // 初始设置
+      setCurrentQuestion(); // 初始化第一个问题
+      setNextQuestionPreview(); // 初始化“下一题”预测
+      updateCorrectCount();
+      const bestTime = storage.getItem("bestTime");
+      document.getElementById("bestTime").innerText = bestTime
+        ? `${bestTime} 毫秒`
+        : "无";
+
+      document
+        .getElementById("toggleDrawer")
+        .addEventListener("click", toggleDrawer);
+
+      document.addEventListener("DOMContentLoaded", () => {
+        startQuiz();
+        document
+          .getElementById("toggleDrawer")
+          .addEventListener("click", toggleDrawer);
+
+        // 监听键盘输入
+        document.addEventListener("keydown", (event) => {
+          // 确保只响应标准键
+          if (!isNaN(event.key)) {
+            appendNumber(event.key);
+          } else if (event.key === "Enter") {
+            checkAnswer();
+          } else if (event.key === "Backspace") {
+            clearDisplay();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
