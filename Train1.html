@@ -184,17 +184,19 @@
           <div id="question" class="display"></div>
           <div id="display" class="display"></div>
           <div class="keypad">
-            <button onclick="appendNumber(1)">1</button>
-            <button onclick="appendNumber(2)">2</button>
-            <button onclick="appendNumber(3)">3</button>
-            <button onclick="appendNumber(4)">4</button>
-            <button onclick="appendNumber(5)">5</button>
-            <button onclick="appendNumber(6)">6</button>
             <button onclick="appendNumber(7)">7</button>
             <button onclick="appendNumber(8)">8</button>
             <button onclick="appendNumber(9)">9</button>
+            <button onclick="appendNumber(5)">5</button>
+            <button onclick="appendNumber(4)">4</button>
+            <button onclick="appendNumber(6)">6</button>
+            <button onclick="appendNumber(1)">1</button>
+            <button onclick="appendNumber(2)">2</button>
+            <button onclick="appendNumber(3)">3</button>
             <button onclick="appendNumber(0)">0</button>
             <button onclick="clearDisplay()">清除</button>
+            <button style="font-size: 8px;" onclick="modeCharge()">难度：2</button>
+
             <button id="check" onclick="checkAnswer()">检查</button>
           </div>
         </div>
@@ -205,7 +207,7 @@
             <div id="contextDiv" class="context">
               <div>下一题: <span id="nextQuestion"></span></div>
               <div>最佳用时: <span id="bestTime"></span></div>
-              <div>当前答对题目: <span id="currentCorrect"></span> / 30</div>
+              <div>当前答对题目: <span id="currentCorrect"></span>/ <span id="number">30</span> </div>
               <div
                 class="buttonGroup"
                 style="display: inline; margin-top: 10px"
@@ -222,6 +224,9 @@
     <a href="Train2.html" class="float-button">记忆能力</a>
 
     <script>
+      var num=30;
+      var num_span=document.getElementById("number");
+      num_span.innerText=`${num}`
       let correctCount = 0;
       let currentQuestion = {};
       let nextQuestionPreview = {};
@@ -229,9 +234,13 @@
 
       const storage = window.localStorage;
 
+      function modeCharge(){}
+
       function generateQuestion() {
+        // 用随机数来搞定比例。
         const type = Math.random();
         let a, b, op, answer;
+        // 乘除法运算
         if (type < 0.6) {
           if (Math.random() < 0.5) {
             a = Math.floor(10 + Math.random() * 90);
@@ -319,7 +328,7 @@
           showGlobalMessage("正确!", true);
           updateCorrectCount();
 
-          if (correctCount >= 2) {
+          if (correctCount >= num) {
             const totalTime = Date.now() - startQuizTime;
             updateBestQuizTime(totalTime);
             showGlobalMessage("通关成功!", true);
@@ -333,7 +342,7 @@
           showGlobalMessage("错误，再试一次。", false);
         }
 
-        if (correctCount >= 30) {
+        if (correctCount >= num) {
           const display = document.getElementById("display");
           display.innerText = "已通关";
         } else {
